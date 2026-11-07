@@ -100,12 +100,27 @@ On each of these days, 7 to 11 of the ranks from 1 to 50 are empty, and a simila
 
 ## Validation
 
-`06_data_validation.sql` compares expected and actual values for 14 checks on the clean table.
+`sql/06_data_validation.sql` has three parts.
+
+**Part A: before vs after cleaning.** Four checks run on both the raw and the clean table, so the problem and the fix are both visible.
+
+| Check | Before cleaning | After cleaning |
+|---|---|---|
+| Days without exactly 50 rows | [TODO] | [TODO] |
+| Duplicate (date, rank) pairs | [TODO] | [TODO] |
+| Duplicate (date, track) pairs | [TODO] | [TODO] |
+| Ranks outside 1 to 50 | [TODO] | [TODO] |
+
+The first two rows are where the cleaning made a difference. The last two are guards: the raw data was already fine on those, and the checks confirm it stayed that way.
+
+**Part B: 14 checks on the clean table.** These run after the fix, so the duplicate and row-count checks show 0 by design. They confirm the final table is consistent. They don't show what was wrong, which is what Part A is for.
 
 - **Row counts:** 29,154 raw rows, 28,950 clean rows, 204 removed, as expected.
 - **579 chart days** remain (583 minus the 4 excluded).
-- **Passed:** every remaining day has exactly 50 rows; no duplicate (date, rank) or (date, track) pairs; ranks are within 1 to 50; popularity is within 0 to 100; no NULLs in key columns; audio features that should be 0 to 1 are; tempo is above 0; no leftover whitespace.
-- **Under review:** check 13 found 179 rows (of 28,950) with a time signature outside the expected range of 3 to 7. I kept these rows. The time signature isn't used in this analysis, and the 3 to 7 range reflects my understanding of Spotify's convention, not the dataset's documentation. [TODO: add what the values are after running the breakdown query.]
+- **Passed (13 of 14):** every remaining day has exactly 50 rows; no duplicate (date, rank) or (date, track) pairs; ranks are within 1 to 50; popularity is within 0 to 100; no NULLs in key columns; audio features that should be 0 to 1 are; tempo is above 0; no leftover whitespace.
+- **Under review (1 of 14):** check 13 found 179 rows (of 28,950) with a time signature outside the expected range of 3 to 7. I kept these rows because the time signature isn't used in this analysis. The 3 to 7 range reflects my understanding of Spotify's convention, not the dataset's documentation. [TODO: add what the values are from Part C.]
+
+**Part C: the rows behind check 13**, broken down by time signature value and number of tracks.
 
 ## Findings: top artists
 
