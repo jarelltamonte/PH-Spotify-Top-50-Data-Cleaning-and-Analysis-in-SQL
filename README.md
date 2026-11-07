@@ -15,7 +15,7 @@ I took a global Spotify chart dataset, filtered it to the Philippines, and used 
 - **Scope used:** `country = 'PH'` only, 29,154 rows, 25 columns, one row per song per chart day.
 - **Date range:** 2023-10-18 to 2025-06-11 (603 calendar days).
 - **No stream counts.** The data has chart rank, movement, popularity score, and audio features, but not streams.
-- The data file is not included in this repo. Check the license on the Kaggle page before redistributing it.
+- The full global file is not in this repo. `dataset/ph_top50_raw.csv` is only the Philippines subset that `python/main.py` produced from it. Check the license on the Kaggle page before redistributing it.
 
 ## Tools
 
@@ -24,17 +24,46 @@ I took a global Spotify chart dataset, filtered it to the Philippines, and used 
 
 ## Workflow
 
-Run the files in order. Each file has a header with the question, data, method, caveats, and finding.
+```
+python/main.py   ->   dataset/ph_top50_raw.csv   ->   sql/01 to 06
+```
+
+1. **Python first.** `python/main.py` reads the full global Spotify file in chunks and keeps only the Philippines rows.
+2. **The CSV is its output.** `dataset/ph_top50_raw.csv` (29,154 rows) is the result of step 1 and the input to the SQL.
+3. **Then SQL.** The CSV is imported into PostgreSQL, where the files in `sql/` profile it, clean it, validate it, and analyze it.
+
+### Repository structure
+
+```
+.
+├── python/
+│   └── main.py
+├── dataset/
+│   └── ph_top50_raw.csv
+├── sql/
+│   ├── 01_create_table.sql
+│   ├── 02_missing_days.sql
+│   ├── 03_days_with_extra_rows.sql
+│   ├── 04_top_artist.sql
+│   ├── 05_clean_table.sql
+│   └── 06_data_validation.sql
+└── README.md
+```
+
+### SQL files
+
+Each file has a header with the question, data, method, caveats, and finding.
 
 | File | What it does |
 |---|---|
 | `01_create_table.sql` | Creates `raw_ph_spotify` with every column as text, so nothing is converted silently |
 | `02_missing_days.sql` | Finds calendar days with no data |
 | `03_days_with_extra_rows.sql` | Finds days that don't have exactly 50 rows, then shows what is wrong on them |
-| `04_multi_artist_rows.sql` | Counts rows that credit more than one artist |
+| `04_top_artist.sql` | Top artists by chart appearances and top-10 appearances (reads the clean table) |
 | `05_clean_table.sql` | Builds `clean_ph_spotify` (types fixed, text trimmed, bad days excluded) |
 | `06_data_validation.sql` | 14 checks on the clean table |
-| `07_top_artist.sql` | Top artists by chart appearances and top-10 appearances |
+
+**Run order:** 01, 02, 03, 05, 06, then 04. File 04 reads the clean table that file 05 creates.
 
 The raw table is never edited. All fixes happen in the clean table.
 
@@ -44,7 +73,7 @@ The raw table is never edited. All fixes happen in the clean table.
 |---|---|---|
 | Missing days | 20 days in 5 gaps, so 583 of 603 days (96.7%) have data | Left as gaps. A daily rank snapshot can't be sensibly filled in |
 | Days with the wrong row count | 4 days (2023-11-20, 2024-03-14, 2024-03-16, 2024-03-18) have 51 rows instead of 50 | See below |
-| Multi-artist credits | 6,518 of 29,154 rows (22.4%) list more than one artist | Split into one row per artist in the analysis |
+| Multi-artist credits | The `artists` column lists collaborators separated by commas | Split into one row per artist in `04_top_artist.sql` |
 
 **Missing days**
 
@@ -106,9 +135,9 @@ All three are Filipino acts, which fits a market where local music has a large s
 ## Reproduce it
 
 1. Download the dataset from Kaggle (`kagglehub` works).
-2. Filter to `country == 'PH'` with pandas, reading in chunks (the full file is about 500 MB).
-3. Import the filtered CSV into the table created by `01_create_table.sql`.
-4. Run files `02` to `07` in order.
+2. Run `python/main.py` with the path to the downloaded file. It writes the Philippines rows to `ph_top50_raw.csv`. (You can skip this step: the filtered CSV is already in `dataset/`.)
+3. Run `sql/01_create_table.sql`, then import `dataset/ph_top50_raw.csv` into `raw_ph_spotify` (in pgAdmin: right-click the table, Import/Export Data, header on).
+4. Run `02`, `03`, `05`, `06`, and then `04`.
 
 ## Next steps
 
